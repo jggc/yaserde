@@ -78,9 +78,11 @@ impl<R: Read> Deserializer<R> {
     };
     match next_event {
       XmlEvent::StartElement { .. } => {
+        log::info!("increasing depth");
         self.depth += 1;
       }
       XmlEvent::EndElement { .. } => {
+        log::info!("decreasing depth");
         self.depth -= 1;
       }
       _ => {}
@@ -90,6 +92,8 @@ impl<R: Read> Deserializer<R> {
   }
 
   pub fn skip_element(&mut self, mut cb: impl FnMut(&XmlEvent)) -> Result<(), String> {
+    log::warn!("Skipping element skip_element");
+    return Err(format!("Skipping elemeent not allowed {:?}", &self.next_event()));
     let depth = self.depth;
 
     while self.depth >= depth {

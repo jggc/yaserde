@@ -158,12 +158,18 @@ pub fn parse(
               // Don't count current struct's StartElement as substruct's StartElement
               let _root = reader.next_event();
             }
+
+            ::yaserde::__derive_debug!("Looking at startElement");
+              log::warn!("matching field type ASPDOJIASDPJIDASPJASDJI");
             if let Ok(::yaserde::__xml::reader::XmlEvent::StartElement { .. }) = reader.peek() {
               // If substruct's start element found then deserialize substruct
+              log::warn!("Found start element ?? {}", stringify!(#struct_name));
               let value = <#struct_name as ::yaserde::YaDeserialize>::deserialize(reader)?;
               #value_label #action;
               // read EndElement
               let _event = reader.next_event()?;
+            } else {
+              log::warn!("matching field type did not find substruct start element ? {}", stringify!(#struct_name));
             }
           }
         })
@@ -181,17 +187,24 @@ pub fn parse(
         )
       };
 
+      log::warn!("matching field type {:?}", field.get_type());
       let visit_sub = |sub_type: Box<Field>, action: TokenStream| match *sub_type {
         Field::FieldOption { .. } | Field::FieldVec { .. } => unimplemented!(),
-        Field::FieldStruct { struct_name } => visit_struct(struct_name, action),
+        Field::FieldStruct { struct_name } => {
+          log::warn!("matching field type {:?}", field.get_type());
+          visit_struct(struct_name, action)
+        }
         simple_type => visit_simple(simple_type, action),
       };
 
       match field.get_type() {
         Field::FieldStruct { struct_name } => {
+          log::warn!("matching field type {:?}", field.get_type());
           visit_struct(struct_name, quote! { = ::std::option::Option::Some(value) })
         }
         Field::FieldOption { data_type } => {
+
+          log::info!("207 field.get_type {}", field.get_type());
           visit_sub(data_type, quote! { = ::std::option::Option::Some(value) })
         }
         Field::FieldVec { data_type } => visit_sub(data_type, quote! { .push(value) }),
@@ -200,6 +213,7 @@ pub fn parse(
     })
     .collect();
 
+  log::warn!("data struct {:?}", data_struct);
   let call_flatten_visitors: TokenStream = data_struct
     .fields
     .iter()
@@ -207,6 +221,7 @@ pub fn parse(
     .filter(|field| !field.is_attribute() && field.is_flatten())
     .map(|field| {
       let value_label = field.get_value_label();
+      println!("value_label {:?}", value_label);
 
       match field.get_type() {
         Field::FieldStruct { .. } => quote! {
@@ -269,6 +284,7 @@ pub fn parse(
         })
       };
 
+      log::info!("284 field.get_type {}", field.get_type());
       let visit_struct = |struct_name: syn::Path, action: TokenStream| {
         visit(
           &action,
@@ -291,6 +307,7 @@ pub fn parse(
         simple_type => visit_simple(simple_type, action),
       };
 
+      log::info!("306 field.get_type {}", field.get_type());
       match field.get_type() {
         Field::FieldString => visit_string(),
         Field::FieldOption { data_type } => {
@@ -352,6 +369,10 @@ pub fn parse(
     .map(|field| {
       let label = &field.label();
       let value_label = field.get_value_label();
+      quote! {
+      ::yaserde::__derive_debug!( "Label {:?}", label);
+          ::yaserde::__derive_debug!("Value Label {:?}", value_label);
+      };
 
       match field.get_type() {
         Field::FieldOption { .. } | Field::FieldVec { .. } => {
@@ -377,6 +398,7 @@ pub fn parse(
     })
     .collect();
 
+  log::warn!("build_code_for_unused_xml_events");
   let (init_unused, write_unused, visit_unused) = if call_flatten_visitors.is_empty() {
     (None, None, None)
   } else {
@@ -431,13 +453,16 @@ pub fn parse(
                 match (namespace.as_str(), name.local_name.as_str()) {
                   #call_visitors
                   _ => {
-                    ::yaserde::__derive_trace!("SKIPPINGSKIPPING  Skipping element {:?}", name.local_name);
-                    return Err(format!("Found unauthorized element {}", name.local_name));
+
+                    ::yaserde::__derive_trace!("Got StartElement {:?}", name.local_name);
+                    // return Err(format!("Found unauthorized element {}", name.local_name));
 
                     let event = reader.next_event()?;
+                    ::yaserde::__derive_trace!("Next event {:?}", event);
                     #write_unused
 
                     if depth > 0 { // Don't skip root element
+                      return Err(format!("Found unauthorized element {}", name.local_name));
                       reader.skip_element(|event| {
                         #write_unused
                       })?;
@@ -451,6 +476,7 @@ pub fn parse(
               depth += 1;
             }
             ::yaserde::__xml::reader::XmlEvent::EndElement { ref name } => {
+                log::warn!("endElement {named_element}");
               if name.local_name == named_element && reader.depth() == start_depth + 1 {
                 #write_unused
                 break;
@@ -535,10 +561,12 @@ fn build_code_for_unused_xml_events(
 ) {
   (
     Some(quote! {
+      ::yaserde::__derive_debug!("UNUSED UNUSED created eventWriter {:?}", unused_xml_elements);
       let mut buf = ::std::vec![];
       let mut writer = ::std::option::Option::Some(::yaserde::__xml::writer::EventWriter::new(&mut buf));
     }),
     Some(quote! {
+      ::yaserde::__derive_debug!("UNUSED UNUSED writing to writer or something {:?}", unused_xml_elements);
       if let ::std::option::Option::Some(ref mut w) = writer {
         if w.write(event.as_writer_event().unwrap()).is_err() {
           writer = ::std::option::Option::None;
@@ -546,6 +574,7 @@ fn build_code_for_unused_xml_events(
       }
     }),
     Some(quote! {
+      ::yaserde::__derive_debug!("UNUSED UNUSED Handling unused_xml_elements {:?}", unused_xml_elements);
       if writer.is_some() {
         let unused_xml_elements = ::std::string::String::from_utf8(buf).unwrap();
         #call_flatten_visitors

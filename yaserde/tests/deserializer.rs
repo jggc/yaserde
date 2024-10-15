@@ -1125,12 +1125,28 @@ fn de_strict() {
   #[derive(PartialEq, Debug, YaDeserialize)]
   pub struct Struct {
     id: i32,
+    hello: String,
+    #[yaserde(rename="substruct")]
+    substruct: Substruct,
   }
+
+  #[derive(PartialEq, Debug, YaDeserialize)]
+  pub struct Substruct {
+      foo: String,
+  }
+
   let xml_content = r#"<?xml version="1.0" encoding="utf-8"?>
       <Struct>
           <id>123</id>
+          <id>123</id>
+          <id>123</id>
+          <id>123</id>
+          <hello>aa</hello>
+          <substruct><foo>bar</foo></substruct>
           <NonExistentAttrShouldCrash></NonExistentAttrShouldCrash>
         </Struct>"#;
   let load: Result<Struct, String> = from_str(xml_content);
-  assert!(load.is_err());
+  // println!("loaded struct : {:?}", &load.unwrap());
+  // assert!(false);
+  assert_eq!(load.err().unwrap(), String::from("Found unauthorized element NonExistentAttrShouldCrash"));
 }
