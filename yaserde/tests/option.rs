@@ -3,6 +3,8 @@ extern crate yaserde;
 #[macro_use]
 extern crate yaserde_derive;
 
+use yaserde_derive::{YaDeserialize, YaSerialize};
+
 fn init() {
   let _ = env_logger::builder().is_test(true).try_init();
 }
@@ -127,6 +129,8 @@ fn option_bool_no_crash_on_bad_input() {
 mod tests {
   use super::*;
   use yaserde::de::from_str;
+  use yaserde_derive::YaDeserialize;
+  use yaserde_derive::YaSerialize;
 
   #[derive(Debug, YaDeserialize, YaSerialize)]
   pub struct Car {
