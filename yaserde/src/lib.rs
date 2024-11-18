@@ -96,8 +96,12 @@ use xml::writer::XmlEvent;
 pub mod de;
 pub mod primitives;
 pub mod ser;
-mod hashmap;
-pub mod raw_xml;
+mod named_list;
+mod maybe_string;
+mod raw_xml;
+pub use maybe_string::MaybeString;
+pub use named_list::NamedList;
+pub use raw_xml::RawXml;
 
 /// A **data structure** that can be deserialized from any data format supported by YaSerDe.
 pub trait YaDeserialize: Sized {

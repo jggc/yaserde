@@ -71,6 +71,7 @@ impl<R: Read> Deserializer<R> {
   }
 
   pub fn next_event(&mut self) -> Result<XmlEvent, String> {
+    println!("Calling Reader.next_event {}", self.depth);
     let next_event = if let Some(peeked) = self.peeked.take() {
       peeked
     } else {
@@ -93,14 +94,18 @@ impl<R: Read> Deserializer<R> {
 
   pub fn skip_element(&mut self, mut cb: impl FnMut(&XmlEvent)) -> Result<(), String> {
     log::warn!("Skipping element skip_element");
-    return Err(format!("Skipping elemeent not allowed {:?}", &self.next_event()));
-    let depth = self.depth;
+    return Err(format!(
+      "Skipping elemeent not allowed {:?}",
+      &self.next_event()
+    ));
+    // TODO make this optional. Maybe based on a feature flag?
+    // let depth = self.depth;
 
-    while self.depth >= depth {
-      cb(&self.next_event()?);
-    }
+    // while self.depth >= depth {
+    //   cb(&self.next_event()?);
+    // }
 
-    Ok(())
+    // Ok(())
   }
 
   pub fn depth(&self) -> usize {
