@@ -1,10 +1,10 @@
-use log::trace;
+use log::debug;
 
 use crate::de::Deserializer;
 
 #[derive(Default, PartialEq, Debug)]
 pub struct NamedList<T: crate::YaDeserialize + crate::YaSerialize + std::fmt::Debug> {
-    pub elements: Vec<(String, T)>,
+  pub elements: Vec<(String, T)>,
 }
 
 impl<T> crate::YaDeserialize for NamedList<T>
@@ -12,62 +12,54 @@ where
   T: crate::YaDeserialize + crate::YaSerialize + std::fmt::Debug,
 {
   fn deserialize<R: std::io::Read>(reader: &mut Deserializer<R>) -> Result<Self, String> {
-    let start_depth = reader.depth();
-    let mut elements: Vec<(String, T)> = Vec::new();
+    println!("NamedList peek {:?}", reader.peek()?);
+    if let xml::reader::XmlEvent::StartElement {
+      name, attributes, ..
+    } = reader.peek()?.to_owned()
     {
-      let curr = reader.peek()?;
-      if let xml::reader::XmlEvent::StartElement {
+      println!(
+        "StartElement with name {} attributes {:?} depth {}",
         name,
         attributes,
-        namespace,
-      } = reader.peek()?.to_owned()
-      {
-        println!(
-          "StartElement with name {} attributes {:?} depth {}",
-          name,
-          attributes,
-          reader.depth()
-        );
-      }
+        reader.depth()
+      );
+      // Get inside the List.
+      // We skip the opening StartElement to get to the list itself
+      reader.next_event()?;
+    } else {
+      return Err(String::from(
+        "Expected a StartElement as first event of NamedList",
+      ));
     }
 
+    let mut elements: Vec<(String, T)> = Vec::new();
+    let start_depth = reader.depth();
     loop {
       let current_event = reader.peek()?.to_owned();
+      println!("NamedList loop iterating on event {:?}", current_event);
       match current_event {
-        xml::reader::XmlEvent::StartDocument {
-          version,
-          encoding,
-          standalone,
-        } => {
-          unimplemented!("HashMap deserializer got StartDocument");
+        xml::reader::XmlEvent::StartDocument { .. } => {
+          unimplemented!("NamedList deserializer got StartDocument");
         }
         xml::reader::XmlEvent::EndDocument => {
-          unimplemented!("HashMap deserializer got EndDocument");
+          unimplemented!("NamedList deserializer got EndDocument");
         }
-        xml::reader::XmlEvent::ProcessingInstruction { name, data } => {
-          unimplemented!("HashMap deserializer got ProcessingInstruction")
+        xml::reader::XmlEvent::ProcessingInstruction { .. } => {
+          unimplemented!("NamedList deserializer got ProcessingInstruction")
         }
         xml::reader::XmlEvent::StartElement {
           name, namespace, ..
         } => {
           println!(
-            "HashMap deserializer got StartElement name {:?} namespace {:?}",
+            "NamedList deserializer got StartElement name {:?} namespace {:?}",
             name, namespace,
           );
           let child = T::deserialize(reader)?;
-          println!("HashMap deserialize inserting child {:?}", child);
+          println!("NamedList deserialize inserting child {:?}", child);
           elements.push((name.to_string(), child));
-          let peek = reader.peek()?;
-          println!("Peek {:?}", peek);
-          // if let xml::reader::XmlEvent::EndElement { name: peek_name } = peek {
-          //   if peek_name == &name {
-          //     println!("Calling next_event after processing StartElement");
-          //     reader.next_event()?;
-          //   }
-          // }
         }
         xml::reader::XmlEvent::EndElement { name } => {
-          println!("HashMap deserializer got EndElement {name}");
+          println!("NamedList deserializer got EndElement {name}");
           println!(
             "Next_event() Peek : {:?}, depth : {}",
             reader.peek()?.to_owned(),
@@ -82,45 +74,88 @@ where
             reader.next_event()?;
           } else {
             println!(
-              "Current depth {} is start depth {}, exiting HashMap deserializer",
+              "Current depth {} is start depth {}, exiting NamedList deserializer",
               reader.depth(),
               start_depth
             );
-            reader.inner_next();
+            //reader.inner_next()?;
             break;
           }
         }
-        xml::reader::XmlEvent::CData(_) => unimplemented!("HashMap deserializer got CData"),
-        xml::reader::XmlEvent::Comment(_) => unimplemented!("HashMap deserializer got Comment"),
+        xml::reader::XmlEvent::CData(_) => unimplemented!("NamedList deserializer got CData"),
+        xml::reader::XmlEvent::Comment(_) => unimplemented!("NamedList deserializer got Comment"),
         xml::reader::XmlEvent::Characters(_) => {
-          unimplemented!("HashMap deserializer got Characters")
+          unimplemented!("NamedList deserializer got Characters")
         }
         xml::reader::XmlEvent::Whitespace(_) => {
-          unimplemented!("HashMap deserializer got Whitespace")
+          unimplemented!("NamedList deserializer got Whitespace")
         }
       }
     }
-    println!("HashMap Deserializer done, reader.peek() {:?}", reader.peek()?);
-    reader.next_event()?;
-    println!("HashMap Deserializer done, reader.peek() {:?}", reader.peek()?);
+    println!(
+      "NamedList Deserializer done, reader.peek() {:?}",
+      reader.peek()?
+    );
 
-    todo!("Hey I'm done with elements {:?}", elements);
     Ok(Self { elements })
   }
 }
 
-impl<T: crate::YaDeserialize + crate::YaSerialize + std::fmt::Debug> crate::YaSerialize for NamedList<T> {
+impl<T: crate::YaDeserialize + crate::YaSerialize + std::fmt::Debug> crate::YaSerialize
+  for NamedList<T>
+{
   fn serialize<W: std::io::Write>(
     &self,
     writer: &mut crate::ser::Serializer<W>,
   ) -> Result<(), String> {
-    todo!()
+    let yaserde_label = writer
+      .get_start_event_name()
+      .unwrap_or_else(|| "Interface".to_string());
+
+    println!("NamedList serialization starting with start event name {yaserde_label}");
+
+    let struct_start_event = xml::writer::XmlEvent::start_element(yaserde_label.as_ref());
+    writer
+      .write(struct_start_event)
+      .map_err(|_e| format!("Start element {yaserde_label:?} write failed"))?;
+
+    for (name, value) in &self.elements {
+      writer.set_skip_start_end(true);
+      debug!(
+        "Serializing element with name {} and value {:?}",
+        name, value
+      );
+
+      let element = xml::writer::XmlEvent::start_element(name.as_str());
+      println!("NamedList writing start element {name}");
+      writer
+        .write(element)
+        .map_err(|_e| format!("Start element {name:?} write failed"))?;
+
+      println!("Serializing value {:?}", value);
+      value.serialize(writer)?;
+
+      // Write end element
+      let element = xml::writer::XmlEvent::end_element();
+      println!("NamedList writing end element {name}");
+      writer
+        .write(element)
+        .map_err(|_e| format!("End element {name:?} write failed"))?;
+    }
+
+    let element = xml::writer::XmlEvent::end_element();
+    println!("NamedList writing FINAL end element");
+    writer
+      .write(element)
+      .map_err(|_e| format!("NamedList FINAL End element write failed"))?;
+
+    Ok(())
   }
 
   fn serialize_attributes(
     &self,
-    attributes: Vec<xml::attribute::OwnedAttribute>,
-    namespace: xml::namespace::Namespace,
+    _attributes: Vec<xml::attribute::OwnedAttribute>,
+    _namespace: xml::namespace::Namespace,
   ) -> Result<
     (
       Vec<xml::attribute::OwnedAttribute>,
@@ -128,7 +163,7 @@ impl<T: crate::YaDeserialize + crate::YaSerialize + std::fmt::Debug> crate::YaSe
     ),
     String,
   > {
-    todo!()
+    unimplemented!("NamedList does not support attributes at the moment")
   }
 }
 
@@ -143,7 +178,8 @@ mod test {
     let mut expected_elements: Vec<(String, RawXml)> = Vec::new();
     expected_elements.push((String::from("struct1"), RawXml::default()));
 
-    let deserialized: NamedList<RawXml> = crate::de::from_str("<struct1><foo>foo</foo></struct1>").unwrap();
+    let deserialized: NamedList<RawXml> =
+      crate::de::from_str("<struct1><foo>foo</foo></struct1>").unwrap();
     assert_eq!(expected_elements, deserialized.elements);
   }
 }

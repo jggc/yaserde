@@ -78,11 +78,7 @@ impl YaDeserializeTrait for RawXml {
 
     println!("buffered events {buffer}");
     let next = reader.peek()?;
-    println!("Processing done next : {:?}", &next);
-    reader.next_event()?;
-    reader.next_event()?;
-    let next = reader.peek()?;
-    println!("Processing done next : {:?}", &next);
+    println!("next : {:?}", &next);
 
     Ok(RawXml(buffer))
   }

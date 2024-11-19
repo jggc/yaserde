@@ -71,7 +71,7 @@ impl<R: Read> Deserializer<R> {
   }
 
   pub fn next_event(&mut self) -> Result<XmlEvent, String> {
-    println!("Calling Reader.next_event {}", self.depth);
+    log::debug!("Calling Reader.next_event with depth :{}", self.depth);
     let next_event = if let Some(peeked) = self.peeked.take() {
       peeked
     } else {
