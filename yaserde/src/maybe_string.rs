@@ -8,6 +8,24 @@ pub struct MaybeString {
   pub content: Option<String>,
 }
 
+impl From<String> for MaybeString {
+  fn from(value: String) -> Self {
+    Self {
+      field_name: String::default(),
+      content: Some(value),
+    }
+  }
+}
+
+impl From<&str> for MaybeString {
+  fn from(value: &str) -> Self {
+    Self {
+      field_name: String::default(),
+      content: Some(String::from(value)),
+    }
+  }
+}
+
 impl YaDeserialize for MaybeString {
   fn deserialize<R: std::io::Read>(
     reader: &mut crate::de::Deserializer<R>,
