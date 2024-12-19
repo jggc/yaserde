@@ -2,7 +2,7 @@ use crate::{ser, YaDeserialize, YaSerialize};
 use xml::reader::XmlEvent as ReadEvent;
 use xml::writer::XmlEvent as WriteEvent;
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct MaybeString {
   pub field_name: String,
   pub content: Option<String>,
