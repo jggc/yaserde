@@ -8,6 +8,15 @@ pub struct MaybeString {
   pub content: Option<String>,
 }
 
+impl From<Option<String>> for MaybeString {
+  fn from(value: Option<String>) -> Self {
+    Self {
+      field_name: String::default(),
+      content: value,
+    }
+  }
+}
+
 impl From<String> for MaybeString {
   fn from(value: String) -> Self {
     Self {
