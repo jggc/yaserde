@@ -12,12 +12,12 @@ where
   T: crate::YaDeserialize + crate::YaSerialize + std::fmt::Debug,
 {
   fn deserialize<R: std::io::Read>(reader: &mut Deserializer<R>) -> Result<Self, String> {
-    println!("NamedList peek {:?}", reader.peek()?);
+    log::trace!("NamedList peek {:?}", reader.peek()?);
     if let xml::reader::XmlEvent::StartElement {
       name, attributes, ..
     } = reader.peek()?.to_owned()
     {
-      println!(
+      log::trace!(
         "StartElement with name {} attributes {:?} depth {}",
         name,
         attributes,
@@ -36,7 +36,7 @@ where
     let start_depth = reader.depth();
     loop {
       let current_event = reader.peek()?.to_owned();
-      println!("NamedList loop iterating on event {:?}", current_event);
+      log::trace!("NamedList loop iterating on event {:?}", current_event);
       match current_event {
         xml::reader::XmlEvent::StartDocument { .. } => {
           unimplemented!("NamedList deserializer got StartDocument");
@@ -50,30 +50,30 @@ where
         xml::reader::XmlEvent::StartElement {
           name, namespace, ..
         } => {
-          println!(
+          log::trace!(
             "NamedList deserializer got StartElement name {:?} namespace {:?}",
             name, namespace,
           );
           let child = T::deserialize(reader)?;
-          println!("NamedList deserialize inserting child {:?}", child);
+          log::trace!("NamedList deserialize inserting child {:?}", child);
           elements.push((name.to_string(), child));
         }
         xml::reader::XmlEvent::EndElement { name } => {
-          println!("NamedList deserializer got EndElement {name}");
-          println!(
+          log::trace!("NamedList deserializer got EndElement {name}");
+          log::trace!(
             "Next_event() Peek : {:?}, depth : {}",
             reader.peek()?.to_owned(),
             reader.depth()
           );
           if reader.depth() > start_depth {
-            println!(
+            log::trace!(
               "Current depth {} greater than start depth {}, consuming event",
               reader.depth(),
               start_depth
             );
             reader.next_event()?;
           } else {
-            println!(
+            log::trace!(
               "Current depth {} is start depth {}, exiting NamedList deserializer",
               reader.depth(),
               start_depth
@@ -92,7 +92,7 @@ where
         }
       }
     }
-    println!(
+    log::trace!(
       "NamedList Deserializer done, reader.peek() {:?}",
       reader.peek()?
     );
@@ -112,7 +112,7 @@ impl<T: crate::YaDeserialize + crate::YaSerialize + std::fmt::Debug> crate::YaSe
       .get_start_event_name()
       .unwrap_or_else(|| "Interface".to_string());
 
-    println!("NamedList serialization starting with start event name {yaserde_label}");
+    log::trace!("NamedList serialization starting with start event name {yaserde_label}");
 
     let struct_start_event = xml::writer::XmlEvent::start_element(yaserde_label.as_ref());
     writer
@@ -127,24 +127,24 @@ impl<T: crate::YaDeserialize + crate::YaSerialize + std::fmt::Debug> crate::YaSe
       );
 
       let element = xml::writer::XmlEvent::start_element(name.as_str());
-      println!("NamedList writing start element {name}");
+      log::trace!("NamedList writing start element {name}");
       writer
         .write(element)
         .map_err(|_e| format!("Start element {name:?} write failed"))?;
 
-      println!("Serializing value {:?}", value);
+      log::trace!("Serializing value {:?}", value);
       value.serialize(writer)?;
 
       // Write end element
       let element = xml::writer::XmlEvent::end_element();
-      println!("NamedList writing end element {name}");
+      log::trace!("NamedList writing end element {name}");
       writer
         .write(element)
         .map_err(|_e| format!("End element {name:?} write failed"))?;
     }
 
     let element = xml::writer::XmlEvent::end_element();
-    println!("NamedList writing FINAL end element");
+    log::trace!("NamedList writing FINAL end element");
     writer
       .write(element)
       .map_err(|_e| format!("NamedList FINAL End element write failed"))?;

@@ -81,7 +81,7 @@ pub fn parse(
               }
             }
             ::yaserde::__xml::reader::XmlEvent::EndElement { ref name } => {
-                println!("expand_enum struct deserialize macro Got EndElement {}", name.local_name);
+                log::trace!("expand_enum struct deserialize macro Got EndElement {}", name.local_name);
               if name.local_name == named_element && reader.depth() == start_depth + 1 {
                 break;
               }

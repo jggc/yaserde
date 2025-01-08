@@ -15,14 +15,14 @@ impl YaDeserializeTrait for RawXml {
       ReadEvent::StartElement { name, .. } => name.local_name.clone(),
       _ => return Err("RawXml Should start deserializing with StartElement".to_string()),
     };
-    println!("RawXml deserialize from root element name : {own_name}");
+    log::trace!("RawXml deserialize from root element name : {own_name}");
     loop {
       let current_event = reader.peek()?.to_owned();
       match current_event.clone() {
         ReadEvent::StartElement {
           name, attributes, ..
         } => {
-          println!("StartElement {name} depth {depth}");
+          log::trace!("StartElement {name} depth {depth}");
           depth += 1;
           let mut attr_string = String::new();
           attributes.iter().for_each(|a| {
@@ -32,22 +32,22 @@ impl YaDeserializeTrait for RawXml {
           let _event = reader.next_event()?;
         }
         ReadEvent::EndElement { name } => {
-          println!("EndElement {name} depth {depth}");
+          log::trace!("EndElement {name} depth {depth}");
           depth -= 1;
           buffer.push_str(&format!("</{}>", name));
-          println!(
+          log::trace!(
             "Checking if name.local_name {} matches own_name {} at depth {depth}",
             &name.local_name, &own_name
           );
           if name.local_name == own_name && depth == 0 {
-            println!("Found next EndElement is closing my struct, breaking out of loop");
+            log::trace!("Found next EndElement is closing my struct, breaking out of loop");
             break;
           } else {
             let _event = reader.next_event()?;
           }
         }
         ReadEvent::Characters(content) => {
-          println!("Characters {content} depth {depth}");
+          log::trace!("Characters {content} depth {depth}");
           buffer.push_str(&content);
           let _event = reader.next_event()?;
         }
@@ -70,15 +70,15 @@ impl YaDeserializeTrait for RawXml {
         ReadEvent::Whitespace(whitespace) => todo!("Whitespace, {:?}", whitespace),
       }
       let next = reader.peek()?;
-      println!(
+      log::trace!(
         "Processing done on \ncurrent_event : {:?} \nnext : {:?}",
         &current_event, &next
       );
     }
 
-    println!("buffered events {buffer}");
+    log::trace!("buffered events {buffer}");
     let next = reader.peek()?;
-    println!("next : {:?}", &next);
+    log::trace!("next : {:?}", &next);
 
     Ok(RawXml(buffer))
   }
