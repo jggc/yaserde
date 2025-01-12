@@ -79,11 +79,11 @@ impl<R: Read> Deserializer<R> {
     };
     match next_event {
       XmlEvent::StartElement { .. } => {
-        log::info!("increasing depth");
+        log::trace!("increasing depth");
         self.depth += 1;
       }
       XmlEvent::EndElement { .. } => {
-        log::info!("decreasing depth");
+        log::trace!("decreasing depth");
         self.depth -= 1;
       }
       _ => {}
