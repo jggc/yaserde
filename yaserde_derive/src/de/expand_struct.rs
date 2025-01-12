@@ -198,12 +198,12 @@ pub fn parse(
 
       match field.get_type() {
         Field::FieldStruct { struct_name } => {
-          log::trace!("matching field type {:?}", field.get_type());
+          log::trace!("FieldStruct matching field type {:?}", field.get_type());
           visit_struct(struct_name, quote! { = ::std::option::Option::Some(value) })
         }
         Field::FieldOption { data_type } => {
 
-          log::trace!("207 field.get_type {}", field.get_type());
+          log::trace!("FieldOption field.get_type {}", field.get_type());
           visit_sub(data_type, quote! { = ::std::option::Option::Some(value) })
         }
         Field::FieldVec { data_type } => visit_sub(data_type, quote! { .push(value) }),
@@ -212,7 +212,7 @@ pub fn parse(
     })
     .collect();
 
-  log::debug!("data struct {:?}", data_struct);
+  log::trace!("data struct {:?}", data_struct);
   let call_flatten_visitors: TokenStream = data_struct
     .fields
     .iter()
@@ -283,7 +283,7 @@ pub fn parse(
         })
       };
 
-      log::trace!("284 field.get_type {}", field.get_type());
+      log::trace!("field.get_type {}", field.get_type());
       let visit_struct = |struct_name: syn::Path, action: TokenStream| {
         visit(
           &action,
@@ -306,7 +306,7 @@ pub fn parse(
         simple_type => visit_simple(simple_type, action),
       };
 
-      log::trace!("306 field.get_type {}", field.get_type());
+      log::trace!("field.get_type {}", field.get_type());
       match field.get_type() {
         Field::FieldString => visit_string(),
         Field::FieldOption { data_type } => {
@@ -397,6 +397,7 @@ pub fn parse(
     })
     .collect();
 
+  log::trace!("build_code_for_unused_xml_events");
   let (init_unused, write_unused, visit_unused) = if call_flatten_visitors.is_empty() {
     (None, None, None)
   } else {
@@ -474,7 +475,7 @@ pub fn parse(
               depth += 1;
             }
             ::yaserde::__xml::reader::XmlEvent::EndElement { ref name } => {
-                log::debug!("endElement {named_element}");
+                log::trace!("endElement {named_element}");
               if name.local_name == named_element && reader.depth() == start_depth + 1 {
                 #write_unused
                 break;
