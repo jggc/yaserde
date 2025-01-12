@@ -3,7 +3,7 @@ pub mod expand_enum;
 pub mod expand_struct;
 
 use crate::common::YaSerdeAttribute;
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
 
 pub fn expand_derive_deserialize(ast: &syn::DeriveInput) -> Result<TokenStream, String> {
@@ -12,14 +12,14 @@ pub fn expand_derive_deserialize(ast: &syn::DeriveInput) -> Result<TokenStream, 
   let data = &ast.data;
   let generics = &ast.generics;
 
-  let root_attributes = YaSerdeAttribute::parse(attrs);
+  let root_attributes = YaSerdeAttribute::from(attrs);
 
   let root_name = root_attributes.xml_element_name(name);
   let root_namespace = root_attributes
     .namespaces
     .iter()
     .find_map(|(prefix, namespace)| {
-      if root_attributes.prefix.eq(prefix) {
+      if root_attributes.prefix.as_deref().eq(&Some(prefix)) {
         Some(namespace.clone())
       } else {
         None
@@ -42,11 +42,9 @@ pub fn expand_derive_deserialize(ast: &syn::DeriveInput) -> Result<TokenStream, 
     syn::Data::Union(ref _data_union) => unimplemented!(),
   };
 
-  let dummy_const = Ident::new(&format!("_IMPL_YA_DESERIALIZE_FOR_{}", name), name.span());
-
   Ok(quote! {
     #[allow(non_upper_case_globals, unused_attributes, unused_qualifications)]
-    const #dummy_const: () = {
+    const _: () = {
       use ::std::str::FromStr as _;
       use ::yaserde::Visitor as _;
 
