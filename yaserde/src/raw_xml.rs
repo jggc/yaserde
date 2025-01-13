@@ -103,8 +103,8 @@ impl YaSerializeTrait for RawXml {
 
   fn serialize_attributes(
     &self,
-    attributes: Vec<xml::attribute::OwnedAttribute>,
-    namespace: xml::namespace::Namespace,
+    _attributes: Vec<xml::attribute::OwnedAttribute>,
+    _namespace: xml::namespace::Namespace,
   ) -> Result<
     (
       Vec<xml::attribute::OwnedAttribute>,

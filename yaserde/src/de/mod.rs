@@ -92,7 +92,7 @@ impl<R: Read> Deserializer<R> {
     Ok(next_event)
   }
 
-  pub fn skip_element(&mut self, mut cb: impl FnMut(&XmlEvent)) -> Result<(), String> {
+  pub fn skip_element(&mut self, mut _cb: impl FnMut(&XmlEvent)) -> Result<(), String> {
     log::warn!("Skipping element skip_element");
     return Err(format!(
       "Skipping elemeent not allowed {:?}",
