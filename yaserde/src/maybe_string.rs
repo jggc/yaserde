@@ -8,6 +8,12 @@ pub struct MaybeString {
   pub content: Option<String>,
 }
 
+impl MaybeString {
+    pub fn content_string(&self) -> String {
+        self.content.clone().unwrap_or_default()
+    }
+}
+
 impl From<Option<String>> for MaybeString {
   fn from(value: Option<String>) -> Self {
     Self {
