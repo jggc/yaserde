@@ -9,9 +9,16 @@ pub struct MaybeString {
 }
 
 impl MaybeString {
-    pub fn content_string(&self) -> String {
-        self.content.clone().unwrap_or_default()
+  pub fn from_bool_as_int(field_name: &str, b: bool) -> MaybeString {
+    MaybeString {
+      field_name: field_name.to_string(),
+      content: Some(format!("{}", b as i8)),
     }
+  }
+
+  pub fn content_string(&self) -> String {
+    self.content.clone().unwrap_or_default()
+  }
 }
 
 impl From<Option<String>> for MaybeString {
@@ -120,4 +127,29 @@ impl YaSerialize for MaybeString {
   > {
     unimplemented!("MaybeString does not currently support attributes")
   }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_from_bool_as_int_true() {
+        let field_name = "test_field";
+        let result = MaybeString::from_bool_as_int(field_name, true);
+
+        assert_eq!(result.field_name, field_name);
+        // Verify 'true' is converted to "1"
+        assert_eq!(result.content, Some("1".to_string()));
+    }
+
+    #[test]
+    fn test_from_bool_as_int_false() {
+        let field_name = "test_field";
+        let result = MaybeString::from_bool_as_int(field_name, false);
+
+        assert_eq!(result.field_name, field_name);
+        // Verify 'false' is converted to "0"
+        assert_eq!(result.content, Some("0".to_string()));
+    }
 }
